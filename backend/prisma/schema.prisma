@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  managedProjects Project[]       @relation("ProjectManager")
+  memberships     ProjectMember[]
+  assignedTasks   Task[]          @relation("TaskAssignee")
+  reports         Report[]
+  notifications   Notification[]
+  files           File[]          @relation("FileUploader")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String   @default("pending")
+  priority    Int      @default(0)
+  budget      Float    @default(0)
+  spent       Float    @default(0)
+  managerId   Int
+
+  manager   User             @relation("ProjectManager", fields: [managerId], references: [id])
+  members   ProjectMember[]
+  tasks     Task[]
+  resources Resource[]
+  reports   Report[]
+  files     File[]
+}
+
+model ProjectMember {
+  id        Int @id @default(autoincrement())
+  projectId Int
+  userId    Int
+
+  project Project @relation(fields: [projectId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  title       String
+  description String?
+  dueDate     DateTime?
+  status      String   @default("pending")
+  priority    Int      @default(0)
+  cost        Float    @default(0)
+  assigneeId  Int
+
+  project   Project  @relation(fields: [projectId], references: [id])
+  assignee  User     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  resources Resource[]
+  files     File[]
+}
+
+model Resource {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  taskId    Int?
+  resourceItemId Int?
+  type      String?
+  name      String?
+  amount    Float
+  unit      String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+  task    Task?   @relation(fields: [taskId], references: [id])
+  resourceItem ResourceItem? @relation(fields: [resourceItemId], references: [id])
+}
+
+model ResourceItem {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  type      String
+  unit      String?
+  createdAt DateTime @default(now())
+
+  resources Resource[]
+}
+
+model Report {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  type      String
+  content   String
+  createdBy Int
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+  author  User    @relation(fields: [createdBy], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model File {
+  id           Int      @id @default(autoincrement())
+  projectId    Int
+  taskId       Int?
+  path         String
+  originalName String
+  uploadedBy   Int
+  createdAt    DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id])
+  task     Task?   @relation(fields: [taskId], references: [id])
+  uploader User    @relation("FileUploader", fields: [uploadedBy], references: [id])
+}
