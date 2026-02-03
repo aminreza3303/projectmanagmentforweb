@@ -3,18 +3,18 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
         <h2 class="mb-1">Reports</h2>
-        <div class="text-muted small">گزارش پیشرفت و مالی با امکان انتخاب چند پروژه</div>
+        <div class="text-muted small">Progress and financial reports with multi-project selection</div>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary" @click="selectAll">انتخاب همه</button>
-        <button class="btn btn-outline-secondary" @click="reload">تازه‌سازی</button>
+        <button class="btn btn-outline-secondary" @click="selectAll">Select all</button>
+        <button class="btn btn-outline-secondary" @click="reload">Refresh</button>
       </div>
     </div>
 
     <div class="card-plain mb-3">
       <div class="row g-3 align-items-end">
         <div class="col-md-6">
-          <label class="form-label small text-muted">پروژه‌ها (انتخاب چندتایی)</label>
+          <label class="form-label small text-muted">Projects (multi-select)</label>
           <select
             v-model="selectedProjectIds"
             class="form-select"
@@ -26,40 +26,40 @@
               {{ p.title }} ({{ p.id }})
             </option>
           </select>
-          <div class="text-muted small mt-1">اگر هیچ موردی را انتخاب نکنید، همه پروژه‌ها لحاظ می‌شود.</div>
+          <div class="text-muted small mt-1">If none are selected, all projects are included.</div>
         </div>
         <div class="col-md-6">
-          <div class="text-muted small mb-1">پروژه‌های فعال در گزارش</div>
+          <div class="text-muted small mb-1">Projects included in report</div>
           <div class="d-flex flex-wrap gap-2">
             <span v-for="p in activeProjects" :key="p.id" class="chip">
               {{ p.title }}
               <button type="button" class="chip-close" @click="removeSelection(p.id)">×</button>
             </span>
-            <span v-if="!activeProjects.length" class="text-muted small">پروژه‌ای در دسترس نیست.</span>
+            <span v-if="!activeProjects.length" class="text-muted small">No projects available.</span>
           </div>
         </div>
       </div>
-      <div v-if="loading" class="text-muted small mt-2">در حال بارگذاری داده‌های پروژه...</div>
+      <div v-if="loading" class="text-muted small mt-2">Loading project data...</div>
       <div v-if="error" class="text-danger small mt-2">{{ error }}</div>
     </div>
 
     <div class="row g-2 mb-3">
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-label">پروژه‌های انتخاب‌شده</div>
+          <div class="stat-label">Projects selected</div>
           <div class="stat-value">{{ activeProjects.length }}</div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-label">تسک‌ها</div>
+          <div class="stat-label">Tasks</div>
           <div class="stat-value">{{ tasksDone }} / {{ tasksTotal }}</div>
-          <div class="text-muted small">تسک انجام‌شده / کل</div>
+          <div class="text-muted small">Done / total tasks</div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-label">درصد پیشرفت</div>
+          <div class="stat-label">Progress</div>
           <div class="stat-value">{{ progressPercent }}%</div>
           <div class="progress-track mt-1">
             <div class="progress-fill" :style="{ width: `${progressPercent}%` }"></div>
@@ -68,20 +68,20 @@
       </div>
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-label">بودجه مصرف‌شده</div>
+          <div class="stat-label">Budget used</div>
           <div class="stat-value">{{ spentTotal }} / {{ budgetTotal }}</div>
           <div class="progress-track mt-1">
             <div class="progress-fill bg-success" :style="{ width: `${budgetUsedPercent}%` }"></div>
           </div>
-          <div class="text-muted small">{{ budgetUsedPercent }}% مصرف بودجه</div>
+          <div class="text-muted small">{{ budgetUsedPercent }}% budget used</div>
         </div>
       </div>
     </div>
 
     <div class="card-plain mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>پیشرفت تسک‌ها بر اساس وضعیت</strong>
-        <span class="text-muted small">نمای کلی از پروژه‌های انتخاب‌شده</span>
+        <strong>Task progress by status</strong>
+        <span class="text-muted small">Overview for selected projects</span>
       </div>
       <div class="status-bars">
         <div v-for="status in statuses" :key="status" class="status-row">
@@ -101,19 +101,19 @@
 
     <div class="card-plain mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>نمای تفکیکی پروژه‌ها</strong>
-        <span class="text-muted small">ترکیب پیشرفت و مالی</span>
+        <strong>Per-project breakdown</strong>
+        <span class="text-muted small">Progress and financials</span>
       </div>
       <div class="table-responsive">
         <table class="table-lite">
           <thead>
             <tr>
-              <th>پروژه</th>
-              <th>وضعیت</th>
-              <th>تسک‌های انجام‌شده</th>
-              <th>درصد پیشرفت</th>
-              <th>بودجه / خرج‌شده</th>
-              <th>% مصرف بودجه</th>
+              <th>Project</th>
+              <th>Status</th>
+              <th>Tasks done</th>
+              <th>Progress %</th>
+              <th>Budget / spent</th>
+              <th>% budget used</th>
             </tr>
           </thead>
           <tbody>
@@ -140,7 +140,7 @@
               </td>
             </tr>
             <tr v-if="!projectRows.length">
-              <td colspan="6" class="text-muted small">داده‌ای برای نمایش وجود ندارد.</td>
+              <td colspan="6" class="text-muted small">No data to display.</td>
             </tr>
           </tbody>
         </table>
@@ -149,8 +149,8 @@
 
     <div class="card-plain mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>گزارش مالی و منابع</strong>
-        <span class="text-muted small">جمع منابع مصرف‌شده در پروژه‌های انتخابی</span>
+        <strong>Financial & resources</strong>
+        <span class="text-muted small">Aggregated resources for selected projects</span>
       </div>
       <div class="row g-3">
         <div class="col-md-7">
@@ -158,11 +158,11 @@
             <table class="table-lite">
               <thead>
                 <tr>
-                  <th>منبع</th>
-                  <th>نوع</th>
-                  <th>مقدار کل</th>
-                  <th>واحد</th>
-                  <th>تعداد پروژه‌ها</th>
+                  <th>Resource</th>
+                  <th>Type</th>
+                  <th>Total amount</th>
+                  <th>Unit</th>
+                  <th># Projects</th>
                 </tr>
               </thead>
               <tbody>
@@ -174,7 +174,7 @@
                   <td>{{ r.projects }}</td>
                 </tr>
                 <tr v-if="!resourceSummary.length">
-                  <td colspan="5" class="text-muted small">منبعی ثبت نشده است.</td>
+                  <td colspan="5" class="text-muted small">No resources recorded.</td>
                 </tr>
               </tbody>
             </table>
@@ -182,16 +182,16 @@
         </div>
         <div class="col-md-5">
           <div class="stat-card h-100">
-            <div class="stat-label">بودجه کل انتخاب‌شده</div>
+            <div class="stat-label">Total selected budget</div>
             <div class="stat-value">{{ budgetTotal }}</div>
-            <div class="text-muted small mb-2">تجمیع بودجه پروژه‌ها</div>
+            <div class="text-muted small mb-2">Aggregated project budgets</div>
 
-            <div class="stat-label">خرج‌شده</div>
+            <div class="stat-label">Spent</div>
             <div class="stat-value">{{ spentTotal }}</div>
             <div class="progress-track mt-1">
               <div class="progress-fill bg-success" :style="{ width: `${budgetUsedPercent}%` }"></div>
             </div>
-            <div class="text-muted small">{{ budgetUsedPercent }}% مصرف بودجه</div>
+            <div class="text-muted small">{{ budgetUsedPercent }}% budget used</div>
           </div>
         </div>
       </div>
@@ -199,44 +199,44 @@
 
     <div v-if="canManageReports" class="card-plain mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>ثبت گزارش متنی</strong>
-        <span class="text-muted small">برای آرشیو یا اشتراک‌گذاری</span>
+        <strong>Add text report</strong>
+        <span class="text-muted small">For archiving or sharing</span>
       </div>
       <form @submit.prevent="createReport">
         <div class="row g-2">
           <div class="col-md-3">
-            <label class="form-label small text-muted">پروژه</label>
+            <label class="form-label small text-muted">Project</label>
             <select v-model="form.project_id" class="form-select" required>
-              <option disabled value="">انتخاب پروژه</option>
+              <option disabled value="">Select project</option>
               <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.title }} ({{ p.id }})</option>
             </select>
           </div>
           <div class="col-md-3">
-            <label class="form-label small text-muted">نوع گزارش</label>
-            <input v-model="form.type" class="form-control" placeholder="مثلا progress/finance" required />
+            <label class="form-label small text-muted">Report type</label>
+            <input v-model="form.type" class="form-control" placeholder="e.g., progress/finance" required />
           </div>
           <div class="col-md-6">
-            <label class="form-label small text-muted">شرح کوتاه</label>
-            <input v-model="form.content" class="form-control" placeholder="خلاصه گزارش" required />
+            <label class="form-label small text-muted">Short summary</label>
+            <input v-model="form.content" class="form-control" placeholder="Report summary" required />
           </div>
         </div>
-        <button class="btn btn-outline-secondary mt-2">ثبت گزارش</button>
+        <button class="btn btn-outline-secondary mt-2">Save report</button>
       </form>
       <div v-if="error" class="text-danger small mt-2">{{ error }}</div>
     </div>
 
     <div class="card-plain">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>گزارش‌های ثبت‌شده</strong>
-        <span class="text-muted small">آخرین گزارش‌ها</span>
+        <strong>Saved reports</strong>
+        <span class="text-muted small">Latest reports</span>
       </div>
       <div class="table-responsive">
         <table class="table-lite">
           <thead>
             <tr>
-              <th>پروژه</th>
-              <th>نوع</th>
-              <th>متن</th>
+              <th>Project</th>
+              <th>Type</th>
+              <th>Content</th>
             </tr>
           </thead>
           <tbody>
@@ -246,7 +246,7 @@
               <td>{{ r.content }}</td>
             </tr>
             <tr v-if="!reports.length">
-              <td colspan="3" class="text-muted small">گزارشی ثبت نشده است.</td>
+              <td colspan="3" class="text-muted small">No reports yet.</td>
             </tr>
           </tbody>
         </table>
