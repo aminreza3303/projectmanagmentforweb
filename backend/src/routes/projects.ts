@@ -240,6 +240,16 @@ router.patch(
     }
 
     const data = statusSchema.parse(req.body);
+    if (data.status === "done") {
+      const remaining = await prisma.task.count({
+        where: { projectId: id, status: { not: "done" } }
+      });
+      if (remaining > 0) {
+        return res
+          .status(400)
+          .json({ message: "Cannot mark project done while tasks are incomplete" });
+      }
+    }
     const updated = await prisma.project.update({
       where: { id },
       data: { status: data.status }

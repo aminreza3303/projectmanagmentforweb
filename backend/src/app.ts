@@ -34,6 +34,16 @@ export const createApp = () => {
     }
   };
 
+  // Simple root handler to avoid "Cannot GET /" responses
+  app.get("/", (_req, res) => {
+    res.json({
+      name: "Project Management API",
+      status: "ok",
+      docs: "/docs",
+      health: "/health"
+    });
+  });
+
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });

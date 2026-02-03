@@ -14,9 +14,30 @@
       </button>
     </div>
     <div class="view-tabs">
-      <span class="view-tab">Table</span>
-      <span class="view-tab">Board</span>
-      <span class="view-tab">Calendar</span>
+      <span
+        class="view-tab"
+        :class="{ active: viewMode === 'table' }"
+        role="button"
+        @click="viewMode = 'table'"
+      >
+        Table
+      </span>
+      <span
+        class="view-tab"
+        :class="{ active: viewMode === 'board' }"
+        role="button"
+        @click="viewMode = 'board'"
+      >
+        Board
+      </span>
+      <span
+        class="view-tab"
+        :class="{ active: viewMode === 'calendar' }"
+        role="button"
+        @click="viewMode = 'calendar'"
+      >
+        Calendar
+      </span>
     </div>
 
     <div class="card-plain mb-3">
@@ -107,58 +128,98 @@
       <div v-if="error" class="text-danger small mt-2">{{ error }}</div>
     </div>
 
-    <table class="table-lite">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Status</th>
-          <th>Priority</th>
-          <th>Dates</th>
-          <th>Budget</th>
-          <th>Spent</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="p in projects" :key="p.id">
-          <td>{{ p.title }}</td>
-          <td>
-            <div v-if="canUpdateStatus">
-              <select
-                class="form-select form-select-sm d-inline-block"
-                style="width: 140px;"
-                :value="p.status"
-                @change="updateStatus(p.id, $event)"
+    <div v-if="viewMode === 'table'">
+      <table class="table-lite">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Dates</th>
+            <th>Budget</th>
+            <th>Spent</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in projects" :key="p.id">
+            <td>{{ p.title }}</td>
+            <td>
+              <div v-if="canUpdateStatus">
+                <select
+                  class="form-select form-select-sm d-inline-block"
+                  style="width: 140px;"
+                  :value="p.status"
+                  @change="updateStatus(p.id, $event)"
+                >
+                  <option value="todo">todo</option>
+                  <option value="pending">pending</option>
+                  <option value="in_progress">in_progress</option>
+                  <option value="done">done</option>
+                  <option value="on_hold">on_hold</option>
+                </select>
+                <span class="badge ms-2" :class="statusClass(p.status)">{{ p.status }}</span>
+              </div>
+              <div v-else>
+                <span class="badge" :class="statusClass(p.status)">{{ p.status }}</span>
+              </div>
+            </td>
+            <td>{{ p.priority }}</td>
+            <td>{{ formatDate(p.startDate) }} -> {{ formatDate(p.endDate) }}</td>
+            <td>{{ p.budget }}</td>
+            <td>{{ p.spent }}</td>
+            <td>
+              <router-link class="btn btn-sm btn-outline-primary" :to="`/projects/${p.id}`">Details</router-link>
+              <button
+                v-if="canManageProjects"
+                class="btn btn-sm btn-outline-secondary ms-2"
+                @click="startEdit(p)"
               >
-                <option value="todo">todo</option>
-                <option value="pending">pending</option>
-                <option value="in_progress">in_progress</option>
-                <option value="done">done</option>
-                <option value="on_hold">on_hold</option>
-              </select>
-              <span class="badge ms-2" :class="statusClass(p.status)">{{ p.status }}</span>
-            </div>
-            <div v-else>
-              <span class="badge" :class="statusClass(p.status)">{{ p.status }}</span>
-            </div>
-          </td>
-          <td>{{ p.priority }}</td>
-          <td>{{ formatDate(p.startDate) }} -> {{ formatDate(p.endDate) }}</td>
-          <td>{{ p.budget }}</td>
-          <td>{{ p.spent }}</td>
-          <td>
-            <router-link class="btn btn-sm btn-outline-primary" :to="`/projects/${p.id}`">Details</router-link>
-            <button
-              v-if="canManageProjects"
-              class="btn btn-sm btn-outline-secondary ms-2"
-              @click="startEdit(p)"
-            >
-              Edit
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+                Edit
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-else-if="viewMode === 'board'" class="board-grid">
+      <div v-for="status in statuses" :key="status" class="board-column">
+        <div class="board-column-title">
+          {{ statusLabels[status] }} ({{ projectsByStatus[status].length }})
+        </div>
+        <div v-if="projectsByStatus[status].length === 0" class="text-muted small">Empty</div>
+        <div v-for="p in projectsByStatus[status]" :key="p.id" class="board-card card-plain">
+          <div class="fw-semibold">{{ p.title }}</div>
+          <div class="small text-muted">Priority {{ p.priority ?? 0 }}</div>
+          <div class="small text-muted">
+            Dates: {{ formatDate(p.startDate) }} → {{ formatDate(p.endDate) }}
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <span class="badge" :class="statusClass(p.status)">{{ p.status }}</span>
+            <router-link class="btn btn-sm btn-outline-primary" :to="`/projects/${p.id}`">
+              Details
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="viewMode === 'calendar'" class="calendar-grid">
+      <div v-if="projectCalendar.length === 0" class="text-muted small">No dated projects.</div>
+      <div v-for="bucket in projectCalendar" :key="bucket.dateKey" class="card-plain calendar-card">
+        <div class="fw-semibold mb-1">{{ bucket.label }}</div>
+        <div v-for="p in bucket.items" :key="p.id" class="calendar-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <span>{{ p.title }}</span>
+            <span class="badge" :class="statusClass(p.status)">{{ p.status }}</span>
+          </div>
+          <div class="small text-muted">
+            {{ formatDate(p.startDate) }} → {{ formatDate(p.endDate) }}
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div v-if="editId && canManageProjects" class="card-plain mt-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -225,7 +286,16 @@ const error = ref("");
 const showForm = ref(false);
 const editId = ref(0);
 const filters = reactive({ q: "", status: "" });
+const viewMode = ref("table");
 const auth = useAuthStore();
+const statuses = ["todo", "pending", "in_progress", "done", "on_hold"];
+const statusLabels = {
+  todo: "Todo",
+  pending: "Pending",
+  in_progress: "In progress",
+  done: "Done",
+  on_hold: "On hold"
+};
 const form = reactive({
   title: "",
   description: "",
@@ -259,6 +329,33 @@ const canUpdateStatus = computed(() => !!auth.user);
 const canManageProjects = computed(
   () => auth.user?.role === "admin" || auth.user?.role === "manager"
 );
+const projectsByStatus = computed(() =>
+  statuses.reduce((acc, status) => {
+    acc[status] = projects.value.filter((p) => p.status === status);
+    return acc;
+  }, {})
+);
+const projectCalendar = computed(() => {
+  const buckets = {};
+  projects.value.forEach((p) => {
+    const key = p.startDate || p.endDate || "no-date";
+    const label =
+      key === "no-date"
+        ? "No date"
+        : new Date(key).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+          });
+    if (!buckets[key]) buckets[key] = { dateKey: key, label, items: [] };
+    buckets[key].items.push(p);
+  });
+  return Object.values(buckets).sort((a, b) => {
+    if (a.dateKey === "no-date") return 1;
+    if (b.dateKey === "no-date") return -1;
+    return new Date(a.dateKey).getTime() - new Date(b.dateKey).getTime();
+  });
+});
 
 const load = async () => {
   try {

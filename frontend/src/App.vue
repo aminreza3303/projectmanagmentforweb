@@ -30,9 +30,7 @@
 
     <div class="main-area">
       <header class="topbar">
-        <input class="search" placeholder="Search" />
         <div class="topbar-actions">
-          <span class="pill">Updates</span>
           <button v-if="auth.token" class="btn btn-sm btn-outline-secondary" @click="logout">
             Log out
           </button>

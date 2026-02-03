@@ -8,9 +8,30 @@
       <router-link class="btn btn-outline-secondary" :to="`/projects/${id}`">Back</router-link>
     </div>
     <div class="view-tabs">
-      <span class="view-tab">Table</span>
-      <span class="view-tab">Board</span>
-      <span class="view-tab">Calendar</span>
+      <span
+        class="view-tab"
+        :class="{ active: viewMode === 'table' }"
+        role="button"
+        @click="viewMode = 'table'"
+      >
+        Table
+      </span>
+      <span
+        class="view-tab"
+        :class="{ active: viewMode === 'board' }"
+        role="button"
+        @click="viewMode = 'board'"
+      >
+        Board
+      </span>
+      <span
+        class="view-tab"
+        :class="{ active: viewMode === 'calendar' }"
+        role="button"
+        @click="viewMode = 'calendar'"
+      >
+        Calendar
+      </span>
     </div>
 
     <div class="card-plain mb-3">
@@ -81,97 +102,137 @@
       <div v-if="error" class="text-danger small mt-2">{{ error }}</div>
     </div>
 
-    <table class="table-lite">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Status</th>
-          <th>Assignee</th>
-          <th>Due date</th>
-          <th>Cost</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="t in tasks" :key="t.id">
-          <td>
-            <div v-if="editId === t.id">
-              <input v-model="editForm.title" class="form-control form-control-sm" />
-            </div>
-            <div v-else>{{ t.title }}</div>
-          </td>
-          <td>
-            <div v-if="editId === t.id">
-              <select v-model="editForm.status" class="form-select form-select-sm">
-                <option value="todo">todo</option>
-                <option value="pending">pending</option>
-                <option value="in_progress">in_progress</option>
-                <option value="done">done</option>
-                <option value="on_hold">on_hold</option>
-              </select>
-            </div>
-            <div v-else-if="canEditStatus(t)">
-              <select class="form-select form-select-sm" :value="t.status" @change="updateStatus(t.id, $event)">
-                <option value="todo">todo</option>
-                <option value="pending">pending</option>
-                <option value="in_progress">in_progress</option>
-                <option value="done">done</option>
-                <option value="on_hold">on_hold</option>
-              </select>
-              <span class="badge ms-2" :class="statusClass(t.status)">{{ t.status }}</span>
-            </div>
-            <div v-else>
-              <span class="badge" :class="statusClass(t.status)">{{ t.status }}</span>
-            </div>
-          </td>
-          <td>
-            <div v-if="editId === t.id">
-              <select v-model="editForm.assignee_id" class="form-select form-select-sm">
-                <option disabled value="">Select assignee</option>
-                <option v-for="u in users" :key="u.id" :value="u.id">
-                  {{ u.name }} ({{ u.email }})
-                </option>
-              </select>
-            </div>
-            <div v-else>{{ assigneeLabel(t) }}</div>
-          </td>
-          <td>
-            <div v-if="editId === t.id">
-              <input v-model="editForm.due_date" type="date" class="form-control form-control-sm" />
-            </div>
-            <div v-else>{{ formatDate(t.dueDate) }}</div>
-          </td>
-          <td>
-            <div v-if="editId === t.id">
-              <input v-model="editForm.cost" type="number" min="0" class="form-control form-control-sm" />
-            </div>
-            <div v-else>{{ t.cost || 0 }}</div>
-          </td>
-          <td>
-            <div v-if="editId === t.id" class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary" @click.prevent="saveEdit">Save</button>
-              <button class="btn btn-sm btn-outline-secondary" @click.prevent="cancelEdit">Cancel</button>
-            </div>
-            <div v-else class="d-flex gap-2">
-              <button
-                v-if="canManageTasks"
-                class="btn btn-sm btn-outline-secondary"
-                @click="startEdit(t)"
-              >
-                Edit
-              </button>
-              <button
-                v-if="canEditStatus(t)"
-                class="btn btn-sm btn-outline-success"
-                @click="markDone(t.id)"
-              >
-                Mark done
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-if="viewMode === 'table'">
+      <table class="table-lite">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Assignee</th>
+            <th>Due date</th>
+            <th>Cost</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="t in tasks" :key="t.id">
+            <td>
+              <div v-if="editId === t.id">
+                <input v-model="editForm.title" class="form-control form-control-sm" />
+              </div>
+              <div v-else>{{ t.title }}</div>
+            </td>
+            <td>
+              <div v-if="editId === t.id">
+                <select v-model="editForm.status" class="form-select form-select-sm">
+                  <option value="todo">todo</option>
+                  <option value="pending">pending</option>
+                  <option value="in_progress">in_progress</option>
+                  <option value="done">done</option>
+                  <option value="on_hold">on_hold</option>
+                </select>
+              </div>
+              <div v-else-if="canEditStatus(t)">
+                <select class="form-select form-select-sm" :value="t.status" @change="updateStatus(t.id, $event)">
+                  <option value="todo">todo</option>
+                  <option value="pending">pending</option>
+                  <option value="in_progress">in_progress</option>
+                  <option value="done">done</option>
+                  <option value="on_hold">on_hold</option>
+                </select>
+                <span class="badge ms-2" :class="statusClass(t.status)">{{ t.status }}</span>
+              </div>
+              <div v-else>
+                <span class="badge" :class="statusClass(t.status)">{{ t.status }}</span>
+              </div>
+            </td>
+            <td>
+              <div v-if="editId === t.id">
+                <select v-model="editForm.assignee_id" class="form-select form-select-sm">
+                  <option disabled value="">Select assignee</option>
+                  <option v-for="u in users" :key="u.id" :value="u.id">
+                    {{ u.name }} ({{ u.email }})
+                  </option>
+                </select>
+              </div>
+              <div v-else>{{ assigneeLabel(t) }}</div>
+            </td>
+            <td>
+              <div v-if="editId === t.id">
+                <input v-model="editForm.due_date" type="date" class="form-control form-control-sm" />
+              </div>
+              <div v-else>{{ formatDate(t.dueDate) }}</div>
+            </td>
+            <td>
+              <div v-if="editId === t.id">
+                <input v-model="editForm.cost" type="number" min="0" class="form-control form-control-sm" />
+              </div>
+              <div v-else>{{ t.cost || 0 }}</div>
+            </td>
+            <td>
+              <div v-if="editId === t.id" class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" @click.prevent="saveEdit">Save</button>
+                <button class="btn btn-sm btn-outline-secondary" @click.prevent="cancelEdit">Cancel</button>
+              </div>
+              <div v-else class="d-flex gap-2">
+                <button
+                  v-if="canManageTasks"
+                  class="btn btn-sm btn-outline-secondary"
+                  @click="startEdit(t)"
+                >
+                  Edit
+                </button>
+                <button
+                  v-if="canEditStatus(t)"
+                  class="btn btn-sm btn-outline-success"
+                  @click="markDone(t.id)"
+                >
+                  Mark done
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-else-if="viewMode === 'board'" class="board-grid">
+      <div v-for="status in statuses" :key="status" class="board-column">
+        <div class="board-column-title">
+          {{ statusLabels[status] }} ({{ tasksByStatus[status].length }})
+        </div>
+        <div v-if="tasksByStatus[status].length === 0" class="text-muted small">Empty</div>
+        <div v-for="t in tasksByStatus[status]" :key="t.id" class="board-card card-plain">
+          <div class="fw-semibold">{{ t.title }}</div>
+          <div class="small text-muted">Assignee: {{ assigneeLabel(t) }}</div>
+          <div class="small text-muted">Due: {{ formatDate(t.dueDate) }}</div>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <span class="badge" :class="statusClass(t.status)">{{ t.status }}</span>
+            <button
+              v-if="canEditStatus(t)"
+              class="btn btn-sm btn-outline-secondary"
+              @click="updateStatusDirect(t.id, nextStatus(t.status))"
+            >
+              Move
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="viewMode === 'calendar'" class="calendar-grid">
+      <div v-if="taskCalendar.length === 0" class="text-muted small">No dated tasks.</div>
+      <div v-for="bucket in taskCalendar" :key="bucket.dateKey" class="card-plain calendar-card">
+        <div class="fw-semibold mb-1">{{ bucket.label }}</div>
+        <div v-for="t in bucket.items" :key="t.id" class="calendar-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <span>{{ t.title }}</span>
+            <span class="badge" :class="statusClass(t.status)">{{ t.status }}</span>
+          </div>
+          <div class="small text-muted">Assignee: {{ assigneeLabel(t) }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -188,6 +249,15 @@ const users = ref([]);
 const error = ref("");
 const auth = useAuthStore();
 const editId = ref(0);
+const viewMode = ref("table");
+const statuses = ["todo", "pending", "in_progress", "done", "on_hold"];
+const statusLabels = {
+  todo: "Todo",
+  pending: "Pending",
+  in_progress: "In progress",
+  done: "Done",
+  on_hold: "On hold"
+};
 const filters = reactive({ q: "", status: "", assigneeId: "" });
 const form = reactive({ title: "", assignee_id: "", due_date: "", cost: 0, status: "pending" });
 const editForm = reactive({
@@ -219,6 +289,38 @@ const canEditStatus = (task) => {
   const user = auth.user;
   if (!user) return false;
   return user.role === "admin" || user.role === "manager" || task.assigneeId === user.id;
+};
+const tasksByStatus = computed(() =>
+  statuses.reduce((acc, status) => {
+    acc[status] = tasks.value.filter((t) => t.status === status);
+    return acc;
+  }, {})
+);
+const taskCalendar = computed(() => {
+  const buckets = {};
+  tasks.value.forEach((t) => {
+    const key = t.dueDate || "no-date";
+    const label =
+      key === "no-date"
+        ? "No due date"
+        : new Date(key).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+          });
+    if (!buckets[key]) buckets[key] = { dateKey: key, label, items: [] };
+    buckets[key].items.push(t);
+  });
+  return Object.values(buckets).sort((a, b) => {
+    if (a.dateKey === "no-date") return 1;
+    if (b.dateKey === "no-date") return -1;
+    return new Date(a.dateKey).getTime() - new Date(b.dateKey).getTime();
+  });
+});
+const nextStatus = (status) => {
+  const order = ["todo", "pending", "in_progress", "done", "on_hold"];
+  const idx = order.indexOf(status);
+  return order[(idx + 1) % order.length];
 };
 
 const load = async () => {
@@ -278,6 +380,16 @@ const updateStatus = async (taskId, event) => {
   error.value = "";
   try {
     const status = event.target.value;
+    await api.patch(`/api/tasks/${taskId}/status`, { status });
+    await load();
+  } catch (err) {
+    error.value = err?.response?.data?.message || "Failed to update status";
+  }
+};
+
+const updateStatusDirect = async (taskId, status) => {
+  error.value = "";
+  try {
     await api.patch(`/api/tasks/${taskId}/status`, { status });
     await load();
   } catch (err) {
