@@ -21,3 +21,6 @@ backend/uploads/
 
 # Legacy local data
 backend/db.json
+
+# Local docs
+*.md
