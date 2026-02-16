@@ -8,9 +8,15 @@ Pages
 - Projects: frontend/src/views/ProjectsView.vue
 - Project Detail: frontend/src/views/ProjectDetailView.vue
 - Tasks: frontend/src/views/TasksView.vue
+- Task Detail: frontend/src/views/TaskDetailView.vue
 - Resources: frontend/src/views/ResourcesView.vue
+- Resources (All): frontend/src/views/ResourcesAllView.vue
+- Financial Resources: frontend/src/views/FinancialResourcesView.vue
 - Reports: frontend/src/views/ReportsView.vue
+- Report Detail: frontend/src/views/ReportDetailView.vue
 - Notifications: frontend/src/views/NotificationsView.vue
+- Admin Users: frontend/src/views/AdminUsersView.vue
+- Admin Roles: frontend/src/views/AdminRolesView.vue
 
 API Integration
 - Axios client: frontend/src/api/client.js

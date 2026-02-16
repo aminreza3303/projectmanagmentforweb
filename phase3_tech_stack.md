@@ -17,6 +17,6 @@ Front‑End (separate app)
 - Axios
 
 Quality & Tooling
-- ESLint + Prettier
+- ESLint + Prettier (optional / not yet configured)
 - Jest (back‑end)
 - Vitest (front‑end if needed)

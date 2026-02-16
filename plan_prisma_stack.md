@@ -46,8 +46,8 @@ Phase 6: Resources & Reports
 - [x] Cost/resource reports
 
 Phase 7: Notifications & Files
-- [ ] Create/read notifications
-- [ ] Upload/download project files
+- [x] Create/read notifications
+- [x] Upload/download project files
 
 Phase 8: Testing & QA
 - [ ] Back‑end unit tests (Jest)

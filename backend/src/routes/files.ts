@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/async-handler";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { isProjectManager, isProjectMember } from "../utils/access";
+import { safeLogActivity } from "../utils/activity";
 
 const router = Router();
 
@@ -53,6 +54,16 @@ router.post(
         uploadedBy: user.id
       }
     });
+
+    safeLogActivity({
+      actorId: user.id,
+      projectId: Number(projectId),
+      taskId: taskId ? Number(taskId) : undefined,
+      action: "file.uploaded",
+      message: `File uploaded: ${req.file.originalname}`,
+      metadata: { fileId: file.id }
+    });
+
     return res.status(201).json(file);
   })
 );
@@ -92,6 +103,15 @@ router.delete(
 
     const filePath = path.join(uploadDir, file.path);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    safeLogActivity({
+      actorId: user.id,
+      projectId: file.projectId,
+      taskId: file.taskId ?? undefined,
+      action: "file.deleted",
+      message: `File deleted: ${file.originalName}`,
+      metadata: { fileId: file.id }
+    });
 
     return res.json({ message: "Deleted" });
   })

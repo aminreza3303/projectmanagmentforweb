@@ -68,9 +68,13 @@ export const reportSchema = z.object({
 });
 
 export const notificationSchema = z.object({
-  user_id: z.number().int(),
+  user_id: z.coerce.number().int(),
   title: z.string().min(2),
   body: z.string().min(2)
+});
+
+export const budgetIncreaseSchema = z.object({
+  amount: z.coerce.number().min(0.01)
 });
 
 export const statusSchema = z.object({

@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/async-handler";
 import { reportSchema } from "../utils/validators";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
+import { safeLogActivity } from "../utils/activity";
 
 const router = Router();
 
@@ -136,6 +137,15 @@ router.post(
         createdBy: user.id
       }
     });
+
+    safeLogActivity({
+      actorId: user.id,
+      projectId: data.project_id,
+      action: "report.created",
+      message: `Report created: ${data.type}`,
+      metadata: { reportId: report.id }
+    });
+
     return res.status(201).json(report);
   })
 );

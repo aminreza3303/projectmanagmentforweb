@@ -68,9 +68,11 @@
       <form @submit.prevent="createProject">
         <div class="row g-2">
           <div class="col-md-3">
+            <label class="form-label small text-muted">Title</label>
             <input v-model="form.title" class="form-control" placeholder="Title" required />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Manager</label>
             <select v-model="form.manager_id" class="form-select" required>
               <option disabled value="">Select manager</option>
               <option v-for="m in managers" :key="m.id" :value="m.id">
@@ -79,6 +81,7 @@
             </select>
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Status</label>
             <select v-model="form.status" class="form-select">
               <option value="todo">todo</option>
               <option value="pending">pending</option>
@@ -87,22 +90,27 @@
               <option value="on_hold">on_hold</option>
             </select>
           </div>
-          <div class="col-md-3">
-            <input v-model="form.budget" type="number" min="0" class="form-control" placeholder="Budget" />
+          <div v-if="canAllocateBudget" class="col-md-3">
+            <label class="form-label small text-muted">Budget (USD)</label>
+            <input v-model="form.budget" type="number" min="0" class="form-control" placeholder="Budget (USD)" />
           </div>
         </div>
         <div class="row g-2 mt-1">
           <div class="col-md-3">
+            <label class="form-label small text-muted">Priority</label>
             <input v-model="form.priority" type="number" min="0" class="form-control" placeholder="Priority" />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Start date</label>
             <input v-model="form.start_date" type="date" class="form-control" placeholder="Start date" />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">End date</label>
             <input v-model="form.end_date" type="date" class="form-control" placeholder="End date" />
           </div>
         </div>
         <div class="mt-2">
+          <label class="form-label small text-muted">Description</label>
           <textarea v-model="form.description" class="form-control" placeholder="Description"></textarea>
         </div>
         <div class="mt-3">
@@ -112,12 +120,16 @@
               <div class="d-flex align-items-center gap-2">
                 <input class="form-check-input" type="checkbox" v-model="resourceSelections[item.id].selected" />
                 <span>{{ item.name }} ({{ item.type }})</span>
+                <span class="text-muted small">Amount</span>
                 <input
                   v-model="resourceSelections[item.id].amount"
                   type="number"
                   min="1"
                   class="form-control form-control-sm"
                   style="width: 90px;"
+                  placeholder="Amount"
+                  aria-label="Amount"
+                  title="Amount"
                 />
               </div>
             </div>
@@ -229,9 +241,11 @@
       <form @submit.prevent="saveEdit">
         <div class="row g-2">
           <div class="col-md-3">
+            <label class="form-label small text-muted">Title</label>
             <input v-model="editForm.title" class="form-control" placeholder="Title" required />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Manager</label>
             <select v-model="editForm.manager_id" class="form-select">
               <option disabled value="">Select manager</option>
               <option v-for="m in managers" :key="m.id" :value="m.id">
@@ -240,6 +254,7 @@
             </select>
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Status</label>
             <select v-model="editForm.status" class="form-select">
               <option value="todo">todo</option>
               <option value="pending">pending</option>
@@ -249,21 +264,26 @@
             </select>
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Priority</label>
             <input v-model="editForm.priority" type="number" min="0" class="form-control" placeholder="Priority" />
           </div>
         </div>
         <div class="row g-2 mt-1">
           <div class="col-md-3">
+            <label class="form-label small text-muted">Start date</label>
             <input v-model="editForm.start_date" type="date" class="form-control" />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">End date</label>
             <input v-model="editForm.end_date" type="date" class="form-control" />
           </div>
-          <div class="col-md-3">
-            <input v-model="editForm.budget" type="number" min="0" class="form-control" placeholder="Budget" />
+          <div v-if="canAllocateBudget" class="col-md-3">
+            <label class="form-label small text-muted">Budget (USD)</label>
+            <input v-model="editForm.budget" type="number" min="0" class="form-control" placeholder="Budget (USD)" />
           </div>
         </div>
         <div class="mt-2">
+          <label class="form-label small text-muted">Description</label>
           <textarea v-model="editForm.description" class="form-control" placeholder="Description"></textarea>
         </div>
         <button class="btn btn-outline-secondary mt-2">Save changes</button>
@@ -329,6 +349,7 @@ const canUpdateStatus = computed(() => !!auth.user);
 const canManageProjects = computed(
   () => auth.user?.role === "admin" || auth.user?.role === "manager"
 );
+const canAllocateBudget = computed(() => auth.user?.role === "manager");
 const projectsByStatus = computed(() =>
   statuses.reduce((acc, status) => {
     acc[status] = projects.value.filter((p) => p.status === status);
@@ -408,7 +429,7 @@ const createProject = async () => {
       manager_id: Number(form.manager_id),
       status: form.status,
       priority: Number(form.priority),
-      budget: Number(form.budget),
+      budget: canAllocateBudget.value ? Number(form.budget) : 0,
       start_date: form.start_date || undefined,
       end_date: form.end_date || undefined,
       resources
@@ -453,7 +474,7 @@ const saveEdit = async () => {
       manager_id: editForm.manager_id ? Number(editForm.manager_id) : undefined,
       status: editForm.status,
       priority: Number(editForm.priority),
-      budget: Number(editForm.budget),
+      ...(canAllocateBudget.value ? { budget: Number(editForm.budget) } : {}),
       start_date: editForm.start_date || undefined,
       end_date: editForm.end_date || undefined
     });

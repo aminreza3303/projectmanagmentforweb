@@ -4,6 +4,8 @@ import { statusSchema, taskSchema, taskUpdateSchema } from "../utils/validators"
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { isProjectMember, isProjectManager } from "../utils/access";
+import { safeLogActivity } from "../utils/activity";
+import { notifyUsers } from "../utils/notify";
 
 const router = Router();
 
@@ -95,6 +97,14 @@ router.post(
       })
     ]);
 
+    safeLogActivity({
+      actorId: user.id,
+      projectId,
+      taskId: task.id,
+      action: "task.created",
+      message: `Task created: ${task.title}`
+    });
+
     return res.status(201).json(task);
   })
 );
@@ -163,6 +173,10 @@ router.put(
       return res.status(400).json({ message: "Insufficient project budget" });
     }
 
+    const prevStatus = task.status;
+    const prevDueDate = task.dueDate;
+    const prevAssignee = task.assigneeId;
+
     const [updated] = await prisma.$transaction([
       prisma.task.update({
         where: { id },
@@ -191,6 +205,54 @@ router.put(
         : [])
     ]);
 
+    safeLogActivity({
+      actorId: user.id,
+      projectId: task.projectId,
+      taskId: updated.id,
+      action: "task.updated",
+      message: `Task updated: ${updated.title}`
+    });
+
+    const statusChanged = data.status && data.status !== prevStatus;
+    const dueChanged =
+      data.due_date &&
+      (!prevDueDate || prevDueDate.getTime() !== updated.dueDate?.getTime());
+    const assigneeChanged = data.assignee_id && data.assignee_id !== prevAssignee;
+
+    const managerId = project?.managerId;
+
+    if (statusChanged) {
+      await notifyUsers(
+        [updated.assigneeId, managerId],
+        "Task status updated",
+        `Task \"${updated.title}\" status changed to ${updated.status}.`
+      );
+      safeLogActivity({
+        actorId: user.id,
+        projectId: task.projectId,
+        taskId: updated.id,
+        action: "task.status_changed",
+        message: `Task status changed: ${updated.title} → ${updated.status}`,
+        metadata: { to: updated.status }
+      });
+    }
+
+    if (dueChanged) {
+      await notifyUsers(
+        [updated.assigneeId, managerId],
+        "Task due date updated",
+        `Task \"${updated.title}\" due date changed to ${updated.dueDate?.toISOString().slice(0, 10) || "-"}.`
+      );
+    }
+
+    if (assigneeChanged) {
+      await notifyUsers(
+        [updated.assigneeId],
+        "Task assignment updated",
+        `You have been assigned to task \"${updated.title}\".`
+      );
+    }
+
     return res.json(updated);
   })
 );
@@ -207,6 +269,14 @@ router.delete(
     if (user.role !== "admin" && !isManager) {
       return res.status(403).json({ message: "Forbidden" });
     }
+
+    safeLogActivity({
+      actorId: user.id,
+      projectId: task.projectId,
+      taskId: task.id,
+      action: "task.deleted",
+      message: `Task deleted: ${task.title}`
+    });
 
     await prisma.$transaction([
       prisma.task.delete({ where: { id } }),
@@ -237,6 +307,23 @@ router.patch(
       where: { id },
       data: { status: data.status }
     });
+
+    safeLogActivity({
+      actorId: user.id,
+      projectId: task.projectId,
+      taskId: task.id,
+      action: "task.status_changed",
+      message: `Task status changed: ${task.title} → ${data.status}`,
+      metadata: { to: data.status }
+    });
+
+    const project = await prisma.project.findUnique({ where: { id: task.projectId } });
+    await notifyUsers(
+      [task.assigneeId, project?.managerId],
+      "Task status updated",
+      `Task \"${task.title}\" status changed to ${data.status}.`
+    );
+
     return res.json(updated);
   })
 );

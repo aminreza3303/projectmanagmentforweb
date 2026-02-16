@@ -10,6 +10,7 @@ import resourcesRouter from "./routes/resources";
 import reportsRouter from "./routes/reports";
 import notificationsRouter from "./routes/notifications";
 import filesRouter from "./routes/files";
+import budgetRouter from "./routes/budget";
 
 export const createApp = () => {
   const app = express();
@@ -58,6 +59,7 @@ export const createApp = () => {
   app.use("/api/reports", reportsRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/files", filesRouter);
+  app.use("/api/budget", budgetRouter);
 
   app.use(
     (

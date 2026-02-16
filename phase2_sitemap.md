@@ -22,6 +22,7 @@ Tasks
 Resources
 - /resources
 - /projects/{id}/resources
+- /financial-resources
 
 Reports
 - /reports

@@ -18,6 +18,7 @@ Users (Assignable / Managers)
 - GET /api/users/managers
 - GET /api/users/me/tasks
 - GET /api/users/me/resources
+- GET /api/users/me/activity
 
 Projects
 - GET  /api/projects
@@ -30,6 +31,7 @@ Projects
 - DELETE /api/projects/{id}/members/{userId}
 - GET  /api/projects/{id}/members
 - GET  /api/projects/{id}/files
+- GET  /api/projects/{id}/activity
 
 Tasks
 - GET  /api/projects/{id}/tasks
@@ -45,6 +47,7 @@ Notes
 - Task status can be updated by admins, project managers, or the assignee.
 
 Resources
+- GET  /api/resources
 - GET  /api/resources/catalog
 - POST /api/resources/catalog
 - GET  /api/projects/{id}/resources
@@ -67,3 +70,7 @@ Files
 - POST /api/files
 - GET  /api/files/{id}
 - DELETE /api/files/{id}
+
+Budget
+- GET  /api/budget
+- POST /api/budget/increase

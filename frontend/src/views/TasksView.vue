@@ -71,9 +71,11 @@
       <form @submit.prevent="createTask">
         <div class="row g-2">
           <div class="col-md-3">
+            <label class="form-label small text-muted">Title</label>
             <input v-model="form.title" class="form-control" placeholder="Title" required />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Assignee</label>
             <select v-model="form.assignee_id" class="form-select" required>
               <option disabled value="">Select assignee</option>
               <option v-for="u in users" :key="u.id" :value="u.id">
@@ -82,12 +84,15 @@
             </select>
           </div>
           <div class="col-md-2">
+            <label class="form-label small text-muted">Due date</label>
             <input v-model="form.due_date" type="date" class="form-control" required />
           </div>
           <div class="col-md-2">
-            <input v-model="form.cost" type="number" min="0" class="form-control" placeholder="Cost" />
+            <label class="form-label small text-muted">Cost (USD)</label>
+            <input v-model="form.cost" type="number" min="0" class="form-control" placeholder="Cost (USD)" />
           </div>
           <div class="col-md-2">
+            <label class="form-label small text-muted">Status</label>
             <select v-model="form.status" class="form-select">
               <option value="todo">todo</option>
               <option value="pending">pending</option>
@@ -175,6 +180,9 @@
                 <button class="btn btn-sm btn-outline-secondary" @click.prevent="cancelEdit">Cancel</button>
               </div>
               <div v-else class="d-flex gap-2">
+                <router-link class="btn btn-sm btn-outline-primary" :to="`/tasks/${t.id}`">
+                  Details
+                </router-link>
                 <button
                   v-if="canManageTasks"
                   class="btn btn-sm btn-outline-secondary"
@@ -208,13 +216,24 @@
           <div class="small text-muted">Due: {{ formatDate(t.dueDate) }}</div>
           <div class="d-flex justify-content-between align-items-center mt-1">
             <span class="badge" :class="statusClass(t.status)">{{ t.status }}</span>
-            <button
-              v-if="canEditStatus(t)"
-              class="btn btn-sm btn-outline-secondary"
-              @click="updateStatusDirect(t.id, nextStatus(t.status))"
-            >
-              Move
-            </button>
+            <div v-if="canEditStatus(t)" class="d-flex gap-1">
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                :disabled="!prevStatus(t.status)"
+                @click="updateStatusDirect(t.id, prevStatus(t.status))"
+                title="Move left"
+              >
+                &lt;-
+              </button>
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                :disabled="!nextStatus(t.status)"
+                @click="updateStatusDirect(t.id, nextStatus(t.status))"
+                title="Move right"
+              >
+                -&gt;
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -317,10 +336,16 @@ const taskCalendar = computed(() => {
     return new Date(a.dateKey).getTime() - new Date(b.dateKey).getTime();
   });
 });
+const statusOrder = ["todo", "pending", "in_progress", "done", "on_hold"];
+const prevStatus = (status) => {
+  const idx = statusOrder.indexOf(status);
+  if (idx <= 0) return null;
+  return statusOrder[idx - 1];
+};
 const nextStatus = (status) => {
-  const order = ["todo", "pending", "in_progress", "done", "on_hold"];
-  const idx = order.indexOf(status);
-  return order[(idx + 1) % order.length];
+  const idx = statusOrder.indexOf(status);
+  if (idx < 0 || idx >= statusOrder.length - 1) return null;
+  return statusOrder[idx + 1];
 };
 
 const load = async () => {
@@ -388,6 +413,7 @@ const updateStatus = async (taskId, event) => {
 };
 
 const updateStatusDirect = async (taskId, status) => {
+  if (!status) return;
   error.value = "";
   try {
     await api.patch(`/api/tasks/${taskId}/status`, { status });

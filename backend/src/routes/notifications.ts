@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/async-handler";
 import { notificationSchema } from "../utils/validators";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest, requireRole } from "../middleware/auth";
+import { safeLogActivity } from "../utils/activity";
 
 const router = Router();
 
@@ -50,6 +51,12 @@ router.post(
         title: data.title,
         body: data.body
       }
+    });
+    safeLogActivity({
+      actorId: req.user?.id,
+      action: "notification.sent",
+      message: `Notification sent: ${data.title}`,
+      metadata: { userId: data.user_id, notificationId: notification.id }
     });
     return res.status(201).json(notification);
   })

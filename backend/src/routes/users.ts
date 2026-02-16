@@ -62,6 +62,36 @@ router.get(
   })
 );
 
+router.get(
+  "/me/activity",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = req.user!;
+    const limit = req.query.limit ? Number(req.query.limit) : 50;
+    const take = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 200) : 50;
+
+    const activities = await prisma.activity.findMany({
+      where: {
+        OR: [
+          { actorId: user.id },
+          { project: { managerId: user.id } },
+          { project: { members: { some: { userId: user.id } } } },
+          { task: { assigneeId: user.id } }
+        ]
+      },
+      include: {
+        actor: { select: { id: true, name: true, email: true } },
+        project: { select: { id: true, title: true } },
+        task: { select: { id: true, title: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take
+    });
+
+    return res.json(activities);
+  })
+);
+
 router.use(requireAuth, requireRole(["admin"]));
 
 router.get(

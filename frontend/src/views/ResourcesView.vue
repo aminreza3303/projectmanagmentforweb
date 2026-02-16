@@ -16,6 +16,7 @@
       <form @submit.prevent="createResource">
         <div class="row g-2">
           <div class="col-md-3">
+            <label class="form-label small text-muted">Catalog item</label>
             <select v-model="form.resource_item_id" class="form-select">
               <option value="">Select from catalog</option>
               <option v-for="c in catalog" :key="c.id" :value="c.id">
@@ -24,6 +25,7 @@
             </select>
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Task (optional)</label>
             <select v-model="form.task_id" class="form-select">
               <option value="">Assign to task (optional)</option>
               <option v-for="t in tasks" :key="t.id" :value="t.id">
@@ -32,17 +34,21 @@
             </select>
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Type</label>
             <input v-model="form.type" class="form-control" placeholder="Type" />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Name</label>
             <input v-model="form.name" class="form-control" placeholder="Name" />
           </div>
           <div class="col-md-3">
+            <label class="form-label small text-muted">Amount</label>
             <input v-model="form.amount" type="number" class="form-control" placeholder="Amount" required />
           </div>
         </div>
         <div class="row g-2 mt-1">
           <div class="col-md-3">
+            <label class="form-label small text-muted">Unit</label>
             <input v-model="form.unit" class="form-control" placeholder="Unit" />
           </div>
         </div>
@@ -69,6 +75,9 @@
           <div class="progress-bar" :style="{ width: item.percent + '%' }"></div>
         </div>
       </div>
+      <div class="mt-3">
+        <canvas ref="summaryChartRef" height="160"></canvas>
+      </div>
     </div>
 
     <div v-if="canManageResources" class="card-plain mb-3">
@@ -77,12 +86,15 @@
       </div>
       <div class="row g-2">
         <div class="col-md-4">
+          <label class="form-label small text-muted">Name</label>
           <input v-model="catalogForm.name" class="form-control" placeholder="Name" />
         </div>
         <div class="col-md-4">
+          <label class="form-label small text-muted">Type</label>
           <input v-model="catalogForm.type" class="form-control" placeholder="Type" />
         </div>
         <div class="col-md-2">
+          <label class="form-label small text-muted">Unit</label>
           <input v-model="catalogForm.unit" class="form-control" placeholder="Unit" />
         </div>
         <div class="col-md-2">
@@ -132,10 +144,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { Chart, ArcElement, Tooltip, Legend, PieController } from "chart.js";
 import { useRoute } from "vue-router";
 import api from "../api/client";
 import { useAuthStore } from "../stores/auth";
+
+Chart.register(ArcElement, Tooltip, Legend, PieController);
 
 const route = useRoute();
 const id = route.params.id;
@@ -144,6 +159,8 @@ const catalog = ref([]);
 const tasks = ref([]);
 const error = ref("");
 const auth = useAuthStore();
+const summaryChartRef = ref(null);
+let summaryChart = null;
 const form = reactive({
   resource_item_id: "",
   task_id: "",
@@ -172,11 +189,45 @@ const summary = computed(() => {
 const canManageResources = computed(
   () => auth.user?.role === "admin" || auth.user?.role === "manager"
 );
+const palette = [
+  "#2f6fed",
+  "#f6c343",
+  "#12b886",
+  "#fa5252",
+  "#7950f2",
+  "#15aabf",
+  "#fd7e14",
+  "#868e96"
+];
+
+const renderSummaryChart = async () => {
+  await nextTick();
+  if (!summaryChartRef.value) return;
+  if (summaryChart) {
+    summaryChart.destroy();
+    summaryChart = null;
+  }
+  if (!summary.value.length) return;
+  summaryChart = new Chart(summaryChartRef.value, {
+    type: "pie",
+    data: {
+      labels: summary.value.map((s) => s.label),
+      datasets: [
+        {
+          data: summary.value.map((s) => s.amount),
+          backgroundColor: summary.value.map((_, i) => palette[i % palette.length])
+        }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+  });
+};
 
 const load = async () => {
   try {
     const { data } = await api.get(`/api/projects/${id}/resources`);
     resources.value = data;
+    await renderSummaryChart();
   } catch (err) {
     error.value = err?.response?.data?.message || "Failed to load resources";
   }
@@ -245,5 +296,9 @@ onMounted(async () => {
   await load();
   await loadCatalog();
   await loadTasks();
+});
+
+onBeforeUnmount(() => {
+  if (summaryChart) summaryChart.destroy();
 });
 </script>

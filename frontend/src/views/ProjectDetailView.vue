@@ -31,6 +31,7 @@
       </div>
       <div v-if="canManageMembers" class="row g-2 mb-2">
         <div class="col-md-6">
+          <label class="form-label small text-muted">Add member</label>
           <select v-model="selectedUser" class="form-select">
             <option disabled value="">Select user to add</option>
             <option v-for="u in users" :key="u.id" :value="u.id">
@@ -57,9 +58,11 @@
       </div>
       <form v-if="canManageFiles" @submit.prevent="uploadFile" class="row g-2 align-items-end">
         <div class="col-md-4">
+          <label class="form-label small text-muted">File</label>
           <input ref="fileInput" type="file" class="form-control" required />
         </div>
         <div class="col-md-4">
+          <label class="form-label small text-muted">Attach to task (optional)</label>
           <select v-model="selectedTask" class="form-select">
             <option value="">Attach to task (optional)</option>
             <option v-for="t in tasks" :key="t.id" :value="t.id">{{ t.title }}</option>

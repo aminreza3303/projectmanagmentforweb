@@ -9,6 +9,8 @@
       <div class="sidebar-section">
         <div class="section-title">Favorites</div>
         <router-link class="nav-item" to="/projects">Projects</router-link>
+        <router-link class="nav-item" to="/resources">Resources</router-link>
+        <router-link class="nav-item" to="/financial-resources">Financial Resources</router-link>
         <router-link class="nav-item" to="/reports">Reports</router-link>
       </div>
 
@@ -22,6 +24,12 @@
         <router-link class="nav-item" to="/notifications">Inbox</router-link>
       </div>
 
+      <div v-if="auth.user?.role === 'admin'" class="sidebar-section">
+        <div class="section-title">Admin</div>
+        <router-link class="nav-item" to="/admin/users">Users</router-link>
+        <router-link class="nav-item" to="/admin/roles">Roles</router-link>
+      </div>
+
       <div class="sidebar-section">
         <div class="section-title">Private</div>
         <router-link class="nav-item" to="/profile">Profile</router-link>
@@ -31,6 +39,9 @@
     <div class="main-area">
       <header class="topbar">
         <div class="topbar-actions">
+          <span v-if="auth.user?.name" class="pill">
+            {{ auth.user.name }}
+          </span>
           <button v-if="auth.token" class="btn btn-sm btn-outline-secondary" @click="logout">
             Log out
           </button>
