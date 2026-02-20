@@ -116,7 +116,7 @@
             <th>Assignee</th>
             <th>Due date</th>
             <th>Cost</th>
-            <th></th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -175,11 +175,11 @@
               <div v-else>{{ t.cost || 0 }}</div>
             </td>
             <td>
-              <div v-if="editId === t.id" class="d-flex gap-2">
+              <div v-if="editId === t.id" class="d-flex gap-2 task-action-buttons">
                 <button class="btn btn-sm btn-outline-secondary" @click.prevent="saveEdit">Save</button>
                 <button class="btn btn-sm btn-outline-secondary" @click.prevent="cancelEdit">Cancel</button>
               </div>
-              <div v-else class="d-flex gap-2">
+              <div v-else class="d-flex gap-2 task-action-buttons">
                 <router-link class="btn btn-sm btn-outline-primary" :to="`/tasks/${t.id}`">
                   Details
                 </router-link>
@@ -466,3 +466,23 @@ onMounted(async () => {
   await loadUsers();
 });
 </script>
+
+<style scoped>
+@media (max-width: 768px) {
+  .table-lite td .task-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .table-lite td .task-action-buttons > .btn {
+    flex: 1 1 calc(50% - 4px);
+    width: auto !important;
+    min-width: 0;
+  }
+
+  .table-lite td .task-action-buttons > :last-child:nth-child(odd) {
+    flex-basis: 100%;
+  }
+}
+</style>
