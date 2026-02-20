@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { asyncHandler } from "../utils/async-handler";
 import { registerSchema } from "../utils/validators";
 import { prisma } from "../db";
-import { requireAuth, requireRole } from "../middleware/auth";
+import { requireAuth, requireRole, AuthedRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -35,7 +35,7 @@ router.get(
 router.get(
   "/me/tasks",
   requireAuth,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const user = req.user!;
     const tasks = await prisma.task.findMany({
       where: { assigneeId: user.id },
@@ -48,7 +48,7 @@ router.get(
 router.get(
   "/me/resources",
   requireAuth,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const user = req.user!;
     const resources = await prisma.resource.findMany({
       where: { task: { assigneeId: user.id } },
@@ -65,7 +65,7 @@ router.get(
 router.get(
   "/me/activity",
   requireAuth,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const user = req.user!;
     const limit = req.query.limit ? Number(req.query.limit) : 50;
     const take = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 200) : 50;

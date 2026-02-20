@@ -43,7 +43,7 @@ export const taskSchema = z.object({
 
 export const taskUpdateSchema = taskSchema.partial();
 
-export const resourceSchema = z.object({
+const resourceBaseSchema = z.object({
   resourceItemId: z.number().int().optional(),
   type: z.string().min(2).optional(),
   name: z.string().min(2).optional(),
@@ -51,9 +51,16 @@ export const resourceSchema = z.object({
   unit: z.string().optional(),
   notes: z.string().optional(),
   task_id: z.number().int().optional()
-}).refine((data) => data.resourceItemId || (data.type && data.name), {
-  message: "resourceItemId or name/type is required"
 });
+
+export const resourceSchema = resourceBaseSchema.refine(
+  (data) => data.resourceItemId || (data.type && data.name),
+  {
+    message: "resourceItemId or name/type is required"
+  }
+);
+
+export const resourceUpdateSchema = resourceBaseSchema.partial();
 
 export const resourceCatalogSchema = z.object({
   name: z.string().min(2),

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../utils/async-handler";
-import { resourceCatalogSchema, resourceSchema } from "../utils/validators";
+import { resourceCatalogSchema, resourceSchema, resourceUpdateSchema } from "../utils/validators";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { safeLogActivity } from "../utils/activity";
@@ -150,7 +150,7 @@ router.put(
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const data = resourceSchema.partial().parse(req.body);
+    const data = resourceUpdateSchema.parse(req.body);
     let resourceItem = null;
     if (data.resourceItemId) {
       resourceItem = await prisma.resourceItem.findUnique({
