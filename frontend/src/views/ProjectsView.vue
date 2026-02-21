@@ -189,6 +189,13 @@
               >
                 Edit
               </button>
+              <button
+                v-if="canManageProjects"
+                class="btn btn-sm btn-outline-danger ms-2"
+                @click="removeProject(p)"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </tbody>
@@ -493,6 +500,25 @@ const updateStatus = async (projectId, event) => {
     await load();
   } catch (err) {
     error.value = err?.response?.data?.message || "Failed to update project status";
+  }
+};
+
+const removeProject = async (project) => {
+  if (!project?.id) return;
+  const ok = window.confirm(
+    `Delete project \"${project.title}\"?\nThis action cannot be undone.`
+  );
+  if (!ok) return;
+
+  error.value = "";
+  try {
+    await api.delete(`/api/projects/${project.id}`);
+    if (editId.value === project.id) {
+      editId.value = 0;
+    }
+    await load();
+  } catch (err) {
+    error.value = err?.response?.data?.message || "Failed to delete project";
   }
 };
 

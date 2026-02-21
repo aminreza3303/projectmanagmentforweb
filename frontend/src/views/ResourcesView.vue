@@ -144,11 +144,12 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { Chart, ArcElement, Tooltip, Legend, PieController } from "chart.js";
 import { useRoute } from "vue-router";
 import api from "../api/client";
 import { useAuthStore } from "../stores/auth";
+import { useUiStore } from "../stores/ui";
 
 Chart.register(ArcElement, Tooltip, Legend, PieController);
 
@@ -159,6 +160,7 @@ const catalog = ref([]);
 const tasks = ref([]);
 const error = ref("");
 const auth = useAuthStore();
+const ui = useUiStore();
 const summaryChartRef = ref(null);
 let summaryChart = null;
 const form = reactive({
@@ -200,6 +202,12 @@ const palette = [
   "#868e96"
 ];
 
+const chartTextColor = () => {
+  if (typeof window === "undefined") return "#1f1f1f";
+  const color = getComputedStyle(document.documentElement).getPropertyValue("--text").trim();
+  return color || "#1f1f1f";
+};
+
 const renderSummaryChart = async () => {
   await nextTick();
   if (!summaryChartRef.value) return;
@@ -219,7 +227,12 @@ const renderSummaryChart = async () => {
         }
       ]
     },
-    options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom", labels: { color: chartTextColor() } }
+      }
+    }
   });
 };
 
@@ -297,6 +310,13 @@ onMounted(async () => {
   await loadCatalog();
   await loadTasks();
 });
+
+watch(
+  () => ui.theme,
+  () => {
+    void renderSummaryChart();
+  }
+);
 
 onBeforeUnmount(() => {
   if (summaryChart) summaryChart.destroy();

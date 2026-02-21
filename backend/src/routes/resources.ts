@@ -18,10 +18,18 @@ router.get(
   "/resources",
   asyncHandler(async (req: AuthedRequest, res) => {
     const user = req.user!;
-    if (user.role !== "admin" && user.role !== "manager") {
-      return res.status(403).json({ message: "Forbidden" });
-    }
+    const where =
+      user.role === "admin" || user.role === "manager"
+        ? undefined
+        : {
+            OR: [
+              { project: { managerId: user.id } },
+              { project: { members: { some: { userId: user.id } } } },
+              { task: { assigneeId: user.id } }
+            ]
+          };
     const resources = await prisma.resource.findMany({
+      where,
       include: {
         resourceItem: true,
         project: { select: { id: true, title: true } },
@@ -67,8 +75,12 @@ router.get(
     if (!project) return res.status(404).json({ message: "Project not found" });
 
     const user = req.user!;
-    if (user.role !== "admin" && project.managerId !== user.id) {
-      return res.status(403).json({ message: "Forbidden" });
+    if (user.role !== "admin") {
+      const isManager = project.managerId === user.id;
+      const isMember = await prisma.projectMember.findFirst({
+        where: { projectId, userId: user.id }
+      });
+      if (!isManager && !isMember) return res.status(403).json({ message: "Forbidden" });
     }
 
     const resources = await prisma.resource.findMany({

@@ -197,6 +197,13 @@
                 >
                   Mark done
                 </button>
+                <button
+                  v-if="canManageTasks"
+                  class="btn btn-sm btn-outline-danger"
+                  @click="removeTask(t)"
+                >
+                  Delete
+                </button>
               </div>
             </td>
           </tr>
@@ -451,6 +458,25 @@ const saveEdit = async () => {
     await load();
   } catch (err) {
     error.value = err?.response?.data?.message || "Failed to update task";
+  }
+};
+
+const removeTask = async (task) => {
+  if (!task?.id) return;
+  const ok = window.confirm(
+    `Delete task \"${task.title}\"?\nThis action cannot be undone.`
+  );
+  if (!ok) return;
+
+  error.value = "";
+  try {
+    await api.delete(`/api/tasks/${task.id}`);
+    if (editId.value === task.id) {
+      editId.value = 0;
+    }
+    await load();
+  } catch (err) {
+    error.value = err?.response?.data?.message || "Failed to delete task";
   }
 };
 

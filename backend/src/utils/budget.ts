@@ -1,30 +1,38 @@
 import { prisma } from "../db";
 
-export const getOrCreateGlobalBudget = async () => {
-  const existing = await prisma.globalBudget.findFirst();
-  if (existing) return existing;
+const allocatedFromProjects = async () => {
   const aggregate = await prisma.project.aggregate({
     _sum: { budget: true }
   });
-  const allocated = aggregate._sum.budget || 0;
+  return aggregate._sum.budget || 0;
+};
+
+export const getOrCreateGlobalBudget = async () => {
+  const existing = await prisma.globalBudget.findFirst();
+  if (existing) return existing;
+  const allocated = await allocatedFromProjects();
   return prisma.globalBudget.create({ data: { total: allocated, allocated } });
 };
 
-export const adjustAllocated = async (delta: number) => {
+export const syncAllocatedWithProjects = async () => {
   const budget = await getOrCreateGlobalBudget();
-  if (delta === 0) return budget;
-  const nextAllocated = budget.allocated + delta;
-  if (nextAllocated < 0) {
-    throw new Error("Allocated budget cannot be negative");
+  const allocated = await allocatedFromProjects();
+  if (Math.abs(budget.allocated - allocated) < 0.000001) {
+    return budget;
   }
   return prisma.globalBudget.update({
     where: { id: budget.id },
-    data: { allocated: nextAllocated }
+    data: { allocated }
   });
 };
 
+export const adjustAllocated = async (_delta: number) => {
+  // Allocated is derived from project budgets; keep DB in sync.
+  return syncAllocatedWithProjects();
+};
+
 export const ensureAvailable = async (amount: number) => {
-  const budget = await getOrCreateGlobalBudget();
+  const budget = await syncAllocatedWithProjects();
   const available = budget.total - budget.allocated;
   if (amount > available) {
     const error = new Error("Insufficient global budget");

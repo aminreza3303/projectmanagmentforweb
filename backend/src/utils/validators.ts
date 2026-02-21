@@ -80,9 +80,12 @@ export const notificationSchema = z.object({
   body: z.string().min(2)
 });
 
-export const budgetIncreaseSchema = z.object({
-  amount: z.coerce.number().min(0.01)
+const budgetAmountSchema = z.object({
+  amount: z.coerce.number().int().min(1).max(1_000_000)
 });
+
+export const budgetIncreaseSchema = budgetAmountSchema;
+export const budgetDecreaseSchema = budgetAmountSchema;
 
 export const statusSchema = z.object({
   status: z.enum(["todo", "pending", "in_progress", "done", "on_hold"])

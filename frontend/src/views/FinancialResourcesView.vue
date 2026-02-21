@@ -53,10 +53,11 @@
       </div>
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-label">Allocation used</div>
-          <div class="stat-value">{{ globalUsedPercent }}%</div>
+          <div class="stat-label">Allocated budget spent</div>
+          <div class="stat-value">{{ allocatedUsedPercent }}%</div>
+          <div class="text-muted small">${{ spentTotal }} spent</div>
           <div class="progress-track mt-1">
-            <div class="progress-fill bg-success" :style="{ width: `${globalUsedPercent}%` }"></div>
+            <div class="progress-fill bg-success" :style="{ width: `${allocatedUsedPercent}%` }"></div>
           </div>
         </div>
       </div>
@@ -64,15 +65,28 @@
 
     <div v-if="isAdmin" class="card-plain mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong>Increase global budget (admin only)</strong>
+        <strong>Manage system funds (admin only)</strong>
       </div>
       <form @submit.prevent="increaseBudget" class="row g-2 align-items-end">
-        <div class="col-md-4">
+        <div class="col-md-5">
           <label class="form-label small text-muted">Amount (USD)</label>
-          <input v-model="increaseAmount" type="number" min="0.01" class="form-control" placeholder="Amount (USD)" />
+          <input
+            v-model="budgetAmount"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            class="form-control"
+            placeholder="1 - 1,000,000"
+            @input="sanitizeBudgetAmount"
+          />
+          <div class="text-muted small mt-1">Whole dollars only (no decimals).</div>
+          <div class="text-muted small">Max removable now: ${{ maxDecrease }}</div>
         </div>
-        <div class="col-md-3">
-          <button class="btn btn-outline-secondary">Increase</button>
+        <div class="col-md-5 d-flex gap-2 flex-wrap">
+          <button class="btn btn-outline-secondary">Add to system</button>
+          <button type="button" class="btn btn-outline-danger" @click="decreaseBudget">
+            Remove from system
+          </button>
         </div>
       </form>
       <div v-if="error" class="text-danger small mt-2">{{ error }}</div>
@@ -136,9 +150,11 @@ const loading = ref(false);
 const error = ref("");
 const filters = reactive({ q: "", status: "" });
 const globalBudget = reactive({ total: 0, allocated: 0, available: 0 });
-const increaseAmount = ref(0);
+const budgetAmount = ref("");
 const auth = useAuthStore();
 const isAdmin = computed(() => auth.user?.role === "admin");
+const MIN_BUDGET_CHANGE = 1;
+const MAX_BUDGET_CHANGE = 1_000_000;
 
 const statusClass = (status) =>
   ({
@@ -153,11 +169,23 @@ const remaining = (p) => Math.max(0, (p.budget || 0) - (p.spent || 0));
 const usedPercent = (p) =>
   p.budget ? Math.min(100, Math.round(((p.spent || 0) / p.budget) * 100)) : 0;
 
-const globalUsedPercent = computed(() =>
-  globalBudget.total
-    ? Math.min(100, Math.round((globalBudget.allocated / globalBudget.total) * 100))
-    : 0
+const spentTotal = computed(() =>
+  projects.value.reduce((sum, project) => sum + (Number(project.spent) || 0), 0)
 );
+const allocatedUsedPercent = computed(() => {
+  if (!globalBudget.allocated) return 0;
+  const ratio = (spentTotal.value / globalBudget.allocated) * 100;
+  return Number.isFinite(ratio) ? Math.min(100, Number(ratio.toFixed(2))) : 0;
+});
+const maxDecrease = computed(() => Math.max(0, Math.floor(globalBudget.total - globalBudget.allocated)));
+
+const getErrorMessage = (err, fallback) => {
+  const data = err?.response?.data;
+  if (typeof data === "string" && data.trim()) return data;
+  if (data?.message) return data.message;
+  if (err?.message) return err.message;
+  return fallback;
+};
 
 const loadGlobalBudget = async () => {
   try {
@@ -166,7 +194,7 @@ const loadGlobalBudget = async () => {
     globalBudget.allocated = data.allocated || 0;
     globalBudget.available = data.available || 0;
   } catch (err) {
-    error.value = err?.response?.data?.message || "Failed to load global budget";
+    error.value = getErrorMessage(err, "Failed to load global budget");
   }
 };
 
@@ -181,7 +209,7 @@ const load = async () => {
     projects.value = data;
     await loadGlobalBudget();
   } catch (err) {
-    error.value = err?.response?.data?.message || "Failed to load projects";
+    error.value = getErrorMessage(err, "Failed to load projects");
   } finally {
     loading.value = false;
   }
@@ -193,18 +221,57 @@ const resetFilters = () => {
   load();
 };
 
+const sanitizeBudgetAmount = () => {
+  budgetAmount.value = String(budgetAmount.value || "")
+    .replace(/[^\d]/g, "")
+    .slice(0, 7);
+};
+
+const parseBudgetAmount = () => {
+  const amount = Number(budgetAmount.value);
+
+  if (!Number.isInteger(amount)) {
+    error.value = "Amount must be a whole dollar value.";
+    return null;
+  }
+
+  if (amount < MIN_BUDGET_CHANGE || amount > MAX_BUDGET_CHANGE) {
+    error.value = `Amount must be between ${MIN_BUDGET_CHANGE} and ${MAX_BUDGET_CHANGE} USD.`;
+    return null;
+  }
+
+  return amount;
+};
+
 const increaseBudget = async () => {
   error.value = "";
-  if (!increaseAmount.value || increaseAmount.value <= 0) {
-    error.value = "Amount must be greater than 0.";
-    return;
-  }
+  const amount = parseBudgetAmount();
+  if (!amount) return;
+
   try {
-    await api.post("/api/budget/increase", { amount: Number(increaseAmount.value) });
-    increaseAmount.value = 0;
+    await api.post("/api/budget/increase", { amount });
+    budgetAmount.value = "";
     await loadGlobalBudget();
   } catch (err) {
-    error.value = err?.response?.data?.message || "Failed to increase global budget";
+    error.value = getErrorMessage(err, "Failed to increase global budget");
+  }
+};
+
+const decreaseBudget = async () => {
+  error.value = "";
+  const amount = parseBudgetAmount();
+  if (!amount) return;
+  if (amount > maxDecrease.value) {
+    error.value = `Maximum removable amount right now is ${maxDecrease.value} USD.`;
+    return;
+  }
+
+  try {
+    await api.post("/api/budget/decrease", { amount });
+    budgetAmount.value = "";
+    await loadGlobalBudget();
+  } catch (err) {
+    error.value = getErrorMessage(err, "Failed to decrease global budget");
   }
 };
 

@@ -281,7 +281,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import {
   Chart,
   BarController,
@@ -295,6 +295,7 @@ import {
 } from "chart.js";
 import api from "../api/client";
 import { useAuthStore } from "../stores/auth";
+import { useUiStore } from "../stores/ui";
 
 Chart.register(
   BarController,
@@ -316,6 +317,7 @@ const loading = ref(false);
 const error = ref("");
 const form = reactive({ project_id: "", type: "progress", content: "" });
 const auth = useAuthStore();
+const ui = useUiStore();
 const canManageReports = computed(
   () => auth.user?.role === "admin" || auth.user?.role === "manager"
 );
@@ -448,6 +450,18 @@ const palette = [
   "#868e96"
 ];
 
+const chartTextColor = () => {
+  if (typeof window === "undefined") return "#1f1f1f";
+  const color = getComputedStyle(document.documentElement).getPropertyValue("--text").trim();
+  return color || "#1f1f1f";
+};
+
+const chartGridColor = () => {
+  if (typeof window === "undefined") return "#e8e6e3";
+  const color = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
+  return color || "#e8e6e3";
+};
+
 const renderStatusChart = () => {
   if (!statusChartRef.value) return;
   if (statusChart) {
@@ -471,7 +485,17 @@ const renderStatusChart = () => {
     options: {
       responsive: true,
       plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      scales: {
+        x: {
+          ticks: { color: chartTextColor() },
+          grid: { color: chartGridColor() }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0, color: chartTextColor() },
+          grid: { color: chartGridColor() }
+        }
+      }
     }
   });
 };
@@ -498,7 +522,7 @@ const renderResourceChart = () => {
     },
     options: {
       responsive: true,
-      plugins: { legend: { position: "bottom" } }
+      plugins: { legend: { position: "bottom", labels: { color: chartTextColor() } } }
     }
   });
 };
@@ -610,6 +634,13 @@ onMounted(async () => {
   await loadSelectionData();
   await loadReports();
 });
+
+watch(
+  () => ui.theme,
+  () => {
+    void renderCharts();
+  }
+);
 
 onBeforeUnmount(() => {
   if (statusChart) statusChart.destroy();

@@ -5,6 +5,7 @@ import { asyncHandler } from "../utils/async-handler";
 import { registerSchema, loginSchema } from "../utils/validators";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
+import { safeLogActivity } from "../utils/activity";
 
 const router = Router();
 
@@ -13,6 +14,19 @@ const signToken = (user: { id: number; role: string; email: string }) => {
   const expiresInRaw = process.env.JWT_EXPIRES_IN || "1d";
   const options: SignOptions = { expiresIn: expiresInRaw as any };
   return jwt.sign({ id: user.id, role: user.role, email: user.email }, secret, options);
+};
+
+const actorIdFromAuthorization = (authorization?: string): number | undefined => {
+  if (!authorization) return undefined;
+  const [type, token] = authorization.split(" ");
+  if (type !== "Bearer" || !token) return undefined;
+  const secret = process.env.JWT_SECRET || "change_me";
+  try {
+    const payload = jwt.verify(token, secret) as { id?: unknown };
+    return typeof payload.id === "number" ? payload.id : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 router.post(
@@ -48,13 +62,26 @@ router.post(
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
     const token = signToken(user);
+    safeLogActivity({
+      actorId: user.id,
+      action: "auth.login",
+      message: `User logged in: ${user.email}`
+    });
     return res.json({ token, user: { ...user, password: undefined } });
   })
 );
 
 router.post(
   "/logout",
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    const actorId = actorIdFromAuthorization(req.headers.authorization);
+    if (actorId) {
+      safeLogActivity({
+        actorId,
+        action: "auth.logout",
+        message: `User logged out`
+      });
+    }
     return res.json({ message: "Logged out" });
   })
 );

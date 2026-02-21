@@ -404,6 +404,21 @@ router.delete(
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    const incompleteTasks = await prisma.task.count({
+      where: { projectId: id, status: { not: "done" } }
+    });
+    if (incompleteTasks > 0) {
+      return res.status(400).json({
+        message: "Cannot delete project while tasks are incomplete"
+      });
+    }
+
+    const projectTasks = await prisma.task.findMany({
+      where: { projectId: id },
+      select: { id: true }
+    });
+    const taskIds = projectTasks.map((task) => task.id);
+
     safeLogActivity({
       actorId: user.id,
       projectId: project.id,
@@ -411,7 +426,20 @@ router.delete(
       message: `Project deleted: ${project.title}`
     });
 
-    await prisma.project.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.resource.deleteMany({ where: { projectId: id } }),
+      prisma.file.deleteMany({ where: { projectId: id } }),
+      prisma.report.deleteMany({ where: { projectId: id } }),
+      prisma.projectMember.deleteMany({ where: { projectId: id } }),
+      prisma.activity.deleteMany({
+        where: {
+          OR: [{ projectId: id }, ...(taskIds.length ? [{ taskId: { in: taskIds } }] : [])]
+        }
+      }),
+      prisma.task.deleteMany({ where: { projectId: id } }),
+      prisma.project.delete({ where: { id } })
+    ]);
+
     if (project.budget > 0) {
       await adjustAllocated(-project.budget);
     }

@@ -17,6 +17,7 @@ import TaskDetailView from "../views/TaskDetailView.vue";
 import ReportDetailView from "../views/ReportDetailView.vue";
 import ResourcesAllView from "../views/ResourcesAllView.vue";
 import FinancialResourcesView from "../views/FinancialResourcesView.vue";
+import ManagementTeamView from "../views/ManagementTeamView.vue";
 
 const routes = [
   { path: "/", redirect: "/dashboard" },
@@ -28,6 +29,7 @@ const routes = [
   { path: "/projects/:id", component: ProjectDetailView, props: true },
   { path: "/projects/:id/tasks", component: TasksView, props: true },
   { path: "/projects/:id/resources", component: ResourcesView, props: true },
+  { path: "/management-team", component: ManagementTeamView },
   { path: "/resources", component: ResourcesAllView },
   { path: "/financial-resources", component: FinancialResourcesView },
   { path: "/tasks/:id", component: TaskDetailView, props: true },

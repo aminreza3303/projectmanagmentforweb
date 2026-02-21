@@ -11,29 +11,13 @@ import reportsRouter from "./routes/reports";
 import notificationsRouter from "./routes/notifications";
 import filesRouter from "./routes/files";
 import budgetRouter from "./routes/budget";
+import { openapiSpec } from "./openapi";
 
 export const createApp = () => {
   const app = express();
 
   app.use(cors());
   app.use(express.json());
-
-  const openapiSpec = {
-    openapi: "3.0.0",
-    info: {
-      title: "Project Management API",
-      version: "1.0.0"
-    },
-    servers: [{ url: "http://localhost:4000" }],
-    paths: {
-      "/health": {
-        get: {
-          summary: "Health check",
-          responses: { "200": { description: "OK" } }
-        }
-      }
-    }
-  };
 
   // Simple root handler to avoid "Cannot GET /" responses
   app.get("/", (_req, res) => {

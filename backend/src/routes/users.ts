@@ -69,16 +69,15 @@ router.get(
     const user = req.user!;
     const limit = req.query.limit ? Number(req.query.limit) : 50;
     const take = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 200) : 50;
+    const where =
+      user.role === "admin"
+        ? {}
+        : {
+            actorId: user.id
+          };
 
     const activities = await prisma.activity.findMany({
-      where: {
-        OR: [
-          { actorId: user.id },
-          { project: { managerId: user.id } },
-          { project: { members: { some: { userId: user.id } } } },
-          { task: { assigneeId: user.id } }
-        ]
-      },
+      where,
       include: {
         actor: { select: { id: true, name: true, email: true } },
         project: { select: { id: true, title: true } },

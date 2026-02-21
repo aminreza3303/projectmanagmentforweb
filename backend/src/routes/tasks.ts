@@ -279,6 +279,8 @@ router.delete(
     });
 
     await prisma.$transaction([
+      prisma.resource.deleteMany({ where: { taskId: id } }),
+      prisma.file.deleteMany({ where: { taskId: id } }),
       prisma.task.delete({ where: { id } }),
       prisma.project.update({
         where: { id: task.projectId },
